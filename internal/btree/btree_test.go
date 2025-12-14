@@ -183,3 +183,40 @@ func TestBTreeDeleteAll(t *testing.T) {
 		t.Fatal("root should be 0 after deleting all keys")
 	}
 }
+
+func TestBTreeIterator(t *testing.T) {
+	c := newMemTest()
+	for i := 1; i <= 50; i++ {
+		key := fmt.Sprintf("k-%03d", i)
+		c.add(key, fmt.Sprintf("v-%d", i))
+	}
+
+	iter := c.tree.SeekLE([]byte("k-000"))
+	if !iter.Valid() {
+		t.Fatal("iterator should be valid")
+	}
+
+	count := 0
+	for ; iter.Valid(); iter.Next() {
+		count++
+		if count > 55 {
+			t.Fatal("iterator running away")
+		}
+	}
+	if count != 50 {
+		t.Fatalf("expected 50 keys, got %d", count)
+	}
+
+	iter = c.tree.SeekLE([]byte("k-025"))
+	if !iter.Valid() {
+		t.Fatal("iterator should find k-025")
+	}
+
+	count = 0
+	for ; iter.Valid(); iter.Next() {
+		count++
+	}
+	if count != 26 {
+		t.Fatalf("expected 26 keys from k-025 onward, got %d", count)
+	}
+}
