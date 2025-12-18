@@ -182,7 +182,7 @@ const (
 	metaSize    = sigSize + 8 + 8 + 8 + 8 + 8 + 8
 )
 
-func writeMeta(page []byte, root uint64, flushed uint64, headPage, headSeq, tailPage, tailSeq uint64) {
+func WriteMeta(page []byte, root uint64, flushed uint64, headPage, headSeq, tailPage, tailSeq uint64) {
 	copy(page[:sigSize], []byte(metaSig))
 	binary.LittleEndian.PutUint64(page[metaOffRoot:], root)
 	binary.LittleEndian.PutUint64(page[metaOffUsed:], flushed)
@@ -192,7 +192,7 @@ func writeMeta(page []byte, root uint64, flushed uint64, headPage, headSeq, tail
 	binary.LittleEndian.PutUint64(page[metaOffFree+24:], tailSeq)
 }
 
-func readMeta(page []byte) (root uint64, flushed uint64, headPage, headSeq, tailPage, tailSeq uint64, ok bool) {
+func ReadMeta(page []byte) (root uint64, flushed uint64, headPage, headSeq, tailPage, tailSeq uint64, ok bool) {
 	if string(page[:sigSize]) != metaSig {
 		return 0, 0, 0, 0, 0, 0, false
 	}
