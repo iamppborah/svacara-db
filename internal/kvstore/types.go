@@ -16,3 +16,17 @@ type Value struct {
 	Bool bool
 	F64  float64
 }
+
+func TypeByColType(ct uint8) ValueType {
+	switch ct {
+	case 1:
+		return TypeInt64
+	case 2:
+		return TypeBytes
+	case 3:
+		return TypeBool
+	case 4:
+		return TypeFloat64
+	}
+	return 0
+}

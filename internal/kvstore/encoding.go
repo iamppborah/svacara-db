@@ -6,22 +6,22 @@ import (
 	"math"
 )
 
-func encodeKey(out []byte, prefix uint32, vals []Value) []byte {
+func EncodeKey(out []byte, prefix uint32, vals []Value) []byte {
 	var buf [4]byte
 	binary.BigEndian.PutUint32(buf[:], prefix)
 	out = append(out, buf[:]...)
-	return encodeValues(out, vals)
+	return EncodeValues(out, vals)
 }
 
-func encodeKeyPartial(out []byte, prefix uint32, vals []Value, cmp int) []byte {
-	out = encodeKey(out, prefix, vals)
+func EncodeKeyPartial(out []byte, prefix uint32, vals []Value, cmp int) []byte {
+	out = EncodeKey(out, prefix, vals)
 	if cmp == 1 || cmp == -3 {
 		out = append(out, 0xff)
 	}
 	return out
 }
 
-func encodeValues(out []byte, vals []Value) []byte {
+func EncodeValues(out []byte, vals []Value) []byte {
 	for _, v := range vals {
 		out = append(out, byte(v.Type))
 		switch v.Type {
@@ -92,7 +92,7 @@ func unescapeBytes(in []byte) []byte {
 	return out
 }
 
-func decodeValues(in []byte, out []Value) {
+func DecodeValues(in []byte, out *[]Value) {
 	for len(in) > 0 {
 		if len(in) < 1 {
 			panic("decode: unexpected eof")
@@ -128,6 +128,6 @@ func decodeValues(in []byte, out []Value) {
 		default:
 			panic("decode: unknown type")
 		}
-		out = append(out, v)
+		*out = append(*out, v)
 	}
 }
