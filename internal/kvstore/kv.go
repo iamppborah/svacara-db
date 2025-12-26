@@ -182,3 +182,11 @@ func (db *KV) updateOrRevert(meta []byte) error {
 func (db *KV) Close() error {
 	return db.file.Close()
 }
+
+func (db *KV) TreeRoot() uint64 {
+	return db.tree.Root
+}
+
+func (db *KV) PageRead(ptr uint64) btree.BNode {
+	return btree.BNode(db.pg.Read(ptr))
+}
