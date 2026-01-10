@@ -5,14 +5,14 @@ func shouldMerge(tree *BTree, node BNode, idx uint16, updated BNode) (int, BNode
 		return 0, BNode{}
 	}
 	if idx > 0 {
-		sibling := BNode(tree.get(node.getPtr(idx - 1)))
+		sibling := BNode(tree.getPtr(node.getPtr(idx - 1)))
 		merged := sibling.nbytes() + updated.nbytes() - HEADER
 		if merged <= BTREE_PAGE_SIZE {
 			return -1, sibling
 		}
 	}
 	if idx+1 < node.nkeys() {
-		sibling := BNode(tree.get(node.getPtr(idx + 1)))
+		sibling := BNode(tree.getPtr(node.getPtr(idx + 1)))
 		merged := sibling.nbytes() + updated.nbytes() - HEADER
 		if merged <= BTREE_PAGE_SIZE {
 			return 1, sibling
@@ -49,11 +49,11 @@ func treeDelete(tree *BTree, node BNode, key []byte) BNode {
 
 	case BNODE_INTERNAL:
 		kptr := node.getPtr(idx)
-		updated := treeDelete(tree, tree.get(kptr), key)
+		updated := treeDelete(tree, tree.getPtr(kptr), key)
 		if len(updated) == 0 {
 			return BNode{}
 		}
-		tree.del(kptr)
+		tree.free(kptr)
 
 		new := BNode(make([]byte, BTREE_PAGE_SIZE))
 		mergeDir, sibling := shouldMerge(tree, node, idx, updated)
@@ -62,13 +62,13 @@ func treeDelete(tree *BTree, node BNode, key []byte) BNode {
 		case mergeDir < 0:
 			merged := BNode(make([]byte, BTREE_PAGE_SIZE))
 			nodeMerge(merged, sibling, updated)
-			tree.del(node.getPtr(idx - 1))
-			nodeReplace2Kid(new, node, idx-1, tree.new(merged), merged.getKey(0))
+			tree.free(node.getPtr(idx - 1))
+			nodeReplace2Kid(new, node, idx-1, tree.alloc(merged), merged.getKey(0))
 		case mergeDir > 0:
 			merged := BNode(make([]byte, BTREE_PAGE_SIZE))
 			nodeMerge(merged, updated, sibling)
-			tree.del(node.getPtr(idx + 1))
-			nodeReplace2Kid(new, node, idx, tree.new(merged), merged.getKey(0))
+			tree.free(node.getPtr(idx + 1))
+			nodeReplace2Kid(new, node, idx, tree.alloc(merged), merged.getKey(0))
 		case mergeDir == 0 && updated.nkeys() == 0:
 			new.setHeader(BNODE_INTERNAL, 0)
 		case mergeDir == 0 && updated.nkeys() > 0:
@@ -80,19 +80,19 @@ func treeDelete(tree *BTree, node BNode, key []byte) BNode {
 }
 
 func (tree *BTree) Delete(key []byte) bool {
-	if tree.root == 0 {
+	if tree.Root == 0 {
 		return false
 	}
-	node := tree.get(tree.root)
+	node := tree.getPtr(tree.Root)
 	updated := treeDelete(tree, node, key)
 	if len(updated) == 0 {
 		return false
 	}
-	tree.del(tree.root)
+	tree.free(tree.Root)
 	if updated.nkeys() == 0 {
-		tree.root = 0
+		tree.Root = 0
 		return true
 	}
-	tree.root = tree.new(updated)
+	tree.Root = tree.alloc(updated)
 	return true
 }

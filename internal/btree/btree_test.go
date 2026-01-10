@@ -18,14 +18,14 @@ func newMemTest() *memTest {
 	pages := map[uint64]BNode{}
 	return &memTest{
 		tree: BTree{
-			get: func(ptr uint64) BNode {
+			GetPage: func(ptr uint64) BNode {
 				node, ok := pages[ptr]
 				if !ok {
 					panic(fmt.Sprintf("bad ptr: %d", ptr))
 				}
 				return node
 			},
-			new: func(node BNode) uint64 {
+			NewPage: func(node BNode) uint64 {
 				if node.nbytes() > BTREE_PAGE_SIZE {
 					panic("oversized node")
 				}
@@ -33,7 +33,7 @@ func newMemTest() *memTest {
 				pages[ptr] = node
 				return ptr
 			},
-			del: func(ptr uint64) {
+			DelPage: func(ptr uint64) {
 				if _, ok := pages[ptr]; !ok {
 					panic("double free")
 				}
@@ -179,7 +179,7 @@ func TestBTreeDeleteAll(t *testing.T) {
 			t.Fatalf("failed to delete %s", key)
 		}
 	}
-	if c.tree.root != 0 {
+	if c.tree.Root != 0 {
 		t.Fatal("root should be 0 after deleting all keys")
 	}
 }

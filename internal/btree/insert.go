@@ -19,7 +19,7 @@ func nodeReplaceKidN(tree *BTree, new BNode, old BNode, idx uint16, kids ...BNod
 	new.setHeader(BNODE_INTERNAL, old.nkeys()+inc-1)
 	nodeAppendRange(new, old, 0, 0, idx)
 	for i, kid := range kids {
-		nodeAppendKV(new, idx+uint16(i), tree.new(kid), kid.getKey(0), nil)
+		nodeAppendKV(new, idx+uint16(i), tree.alloc(kid), kid.getKey(0), nil)
 	}
 	nodeAppendRange(new, old, idx+inc, idx+1, old.nkeys()-(idx+1))
 }
@@ -75,8 +75,8 @@ func treeInsert(tree *BTree, node BNode, key []byte, val []byte) BNode {
 		}
 	case BNODE_INTERNAL:
 		kptr := node.getPtr(idx)
-		knode := tree.get(kptr)
-		tree.del(kptr)
+		knode := tree.getPtr(kptr)
+		tree.free(kptr)
 		knode = treeInsert(tree, knode, key, val)
 		nsplit, split := nodeSplit3(knode)
 		nodeReplaceKidN(tree, new, node, idx, split[:nsplit]...)
@@ -85,36 +85,36 @@ func treeInsert(tree *BTree, node BNode, key []byte, val []byte) BNode {
 }
 
 func (tree *BTree) Insert(key []byte, val []byte) {
-	if tree.root == 0 {
+	if tree.Root == 0 {
 		root := BNode(make([]byte, BTREE_PAGE_SIZE))
 		root.setHeader(BNODE_LEAF, 1)
 		nodeAppendKV(root, 0, 0, key, val)
-		tree.root = tree.new(root)
+		tree.Root = tree.alloc(root)
 		return
 	}
-	node := tree.get(tree.root)
-	tree.del(tree.root)
+	node := tree.getPtr(tree.Root)
+	tree.free(tree.Root)
 	node = treeInsert(tree, node, key, val)
 	nsplit, split := nodeSplit3(node)
 	if nsplit > 1 {
 		root := BNode(make([]byte, BTREE_PAGE_SIZE))
 		root.setHeader(BNODE_INTERNAL, nsplit)
 		for i, knode := range split[:nsplit] {
-			ptr := tree.new(knode)
+			ptr := tree.alloc(knode)
 			copy(root[offsetPos(root, uint16(i)+1):], make([]byte, 2))
 			nodeAppendKV(root, uint16(i), ptr, knode.getKey(0), nil)
 		}
-		tree.root = tree.new(root)
+		tree.Root = tree.alloc(root)
 	} else {
-		tree.root = tree.new(split[0])
+		tree.Root = tree.alloc(split[0])
 	}
 }
 
 func (tree *BTree) Get(key []byte) ([]byte, bool) {
-	if tree.root == 0 {
+	if tree.Root == 0 {
 		return nil, false
 	}
-	node := tree.get(tree.root)
+	node := tree.getPtr(tree.Root)
 	for {
 		idx := nodeLookupLE(node, key)
 		switch node.btype() {
@@ -124,7 +124,7 @@ func (tree *BTree) Get(key []byte) ([]byte, bool) {
 			}
 			return nil, false
 		case BNODE_INTERNAL:
-			node = tree.get(node.getPtr(idx))
+			node = tree.getPtr(node.getPtr(idx))
 		}
 	}
 }

@@ -18,10 +18,18 @@ const (
 type BNode []byte
 
 type BTree struct {
-	root uint64
-	get  func(uint64) BNode
-	new  func(BNode) uint64
-	del  func(uint64)
+	Root    uint64
+	GetPage func(uint64) BNode
+	NewPage func(BNode) uint64
+	DelPage func(uint64)
+}
+
+func (tree *BTree) getPtr(ptr uint64) BNode { return tree.GetPage(ptr) }
+func (tree *BTree) alloc(node BNode) uint64 { return tree.NewPage(node) }
+func (tree *BTree) free(ptr uint64)         { tree.DelPage(ptr) }
+
+func CompareKeys(a, b []byte) int {
+	return cmp(a, b)
 }
 
 func (node BNode) btype() uint16 {

@@ -8,10 +8,10 @@ type BIter struct {
 
 func (tree *BTree) SeekLE(key []byte) *BIter {
 	iter := &BIter{tree: tree}
-	if tree.root == 0 {
+	if tree.Root == 0 {
 		return iter
 	}
-	node := tree.get(tree.root)
+	node := tree.getPtr(tree.Root)
 	for {
 		idx := nodeLookupLE(node, key)
 		iter.path = append(iter.path, node)
@@ -19,7 +19,7 @@ func (tree *BTree) SeekLE(key []byte) *BIter {
 		if node.btype() == BNODE_LEAF {
 			break
 		}
-		node = tree.get(node.getPtr(idx))
+		node = tree.getPtr(node.getPtr(idx))
 	}
 	return iter
 }
@@ -61,13 +61,13 @@ func (iter *BIter) Next() {
 
 		if pos+1 < node.nkeys() {
 			iter.pos[level] = pos + 1
-			child := iter.tree.get(node.getPtr(pos + 1))
+			child := iter.tree.getPtr(node.getPtr(pos + 1))
 			level++
 			iter.path[level] = child
 			iter.pos[level] = 0
 
 			for child.btype() == BNODE_INTERNAL {
-				child = iter.tree.get(child.getPtr(0))
+				child = iter.tree.getPtr(child.getPtr(0))
 				level++
 				iter.path = append(iter.path, child)
 				iter.pos = append(iter.pos, 0)

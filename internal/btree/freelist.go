@@ -26,59 +26,59 @@ func (node LNode) setPtr(idx int, ptr uint64) {
 }
 
 type FreeList struct {
-	get     func(uint64) BNode
-	new     func(BNode) uint64
-	set     func(uint64) BNode
-	headPage uint64
-	headSeq  uint64
-	tailPage uint64
-	tailSeq  uint64
-	maxSeq   uint64
+	GetPage       func(uint64) BNode
+	NewPage       func(BNode) uint64
+	SetPage       func(uint64) BNode
+	HeadPage      uint64
+	HeadSeq       uint64
+	TailPage      uint64
+	TailSeq       uint64
+	maxSeq        uint64
 }
 
 func (fl *FreeList) PopHead() uint64 {
-	if fl.headPage == 0 {
+	if fl.HeadPage == 0 {
 		return 0
 	}
-	node := LNode(fl.get(fl.headPage))
-	ptr := node.getPtr(int(fl.headSeq))
-	fl.headSeq++
+	node := LNode(fl.GetPage(fl.HeadPage))
+	ptr := node.getPtr(int(fl.HeadSeq))
+	fl.HeadSeq++
 
 	next := node.getNext()
-	if fl.headSeq*8 >= FREE_LIST_CAP {
+	if fl.HeadSeq*8 >= FREE_LIST_CAP {
 		if next != 0 {
-			fl.headSeq = 0
+			fl.HeadSeq = 0
 		}
 		newHead := node.getNext()
-		if newHead != fl.headPage {
-			fl.set(fl.headPage)
+		if newHead != fl.HeadPage {
+			fl.SetPage(fl.HeadPage)
 		}
-		fl.headPage = newHead
+		fl.HeadPage = newHead
 	}
 	return ptr
 }
 
 func (fl *FreeList) PushTail(ptr uint64) {
-	if fl.tailPage == 0 {
+	if fl.TailPage == 0 {
 		data := make([]byte, BTREE_PAGE_SIZE)
 		LNode(data).setNext(0)
-		fl.tailPage = fl.new(data)
-		fl.headPage = fl.tailPage
+		fl.TailPage = fl.NewPage(data)
+		fl.HeadPage = fl.TailPage
 	}
-	node := LNode(fl.set(fl.tailPage))
-	idx := fl.tailSeq % FREE_LIST_CAP
+	node := LNode(fl.SetPage(fl.TailPage))
+	idx := fl.TailSeq % FREE_LIST_CAP
 	node.setPtr(int(idx), ptr)
-	fl.tailSeq++
+	fl.TailSeq++
 
-	if fl.tailSeq%FREE_LIST_CAP == 0 {
+	if fl.TailSeq%FREE_LIST_CAP == 0 {
 		data := make([]byte, BTREE_PAGE_SIZE)
 		LNode(data).setNext(0)
-		next := fl.new(data)
+		next := fl.NewPage(data)
 		node.setNext(next)
-		fl.tailPage = next
+		fl.TailPage = next
 	}
 }
 
 func (fl *FreeList) SetMaxSeq() {
-	fl.maxSeq = fl.tailSeq
+	fl.maxSeq = fl.TailSeq
 }
