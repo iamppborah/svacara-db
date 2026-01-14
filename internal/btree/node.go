@@ -109,17 +109,20 @@ func nodeAppendRange(new BNode, old BNode, dstNew uint16, srcOld uint16, n uint1
 
 func nodeLookupLE(node BNode, key []byte) uint16 {
 	nkeys := node.nkeys()
-	found := uint16(0)
-	for i := uint16(1); i < nkeys; i++ {
-		cmp := cmp(node.getKey(i), key)
-		if cmp <= 0 {
-			found = i
-		}
-		if cmp >= 0 {
-			break
+	lo := uint16(0)
+	hi := nkeys
+	for lo < hi {
+		mid := lo + (hi-lo)/2
+		if cmp(node.getKey(mid), key) <= 0 {
+			lo = mid + 1
+		} else {
+			hi = mid
 		}
 	}
-	return found
+	if lo == 0 {
+		return 0
+	}
+	return lo - 1
 }
 
 func cmp(a, b []byte) int {
