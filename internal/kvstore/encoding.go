@@ -21,6 +21,15 @@ func EncodeKeyPartial(out []byte, prefix uint32, vals []Value, cmp int) []byte {
 	return out
 }
 
+const (
+	CmpLT = -1
+	CmpLE = -2
+	CmpEQ = 0
+	CmpGE = 1
+	CmpGT = 2
+	CmpNE = 3
+)
+
 func EncodeValues(out []byte, vals []Value) []byte {
 	for _, v := range vals {
 		out = append(out, byte(v.Type))
