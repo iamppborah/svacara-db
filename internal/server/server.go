@@ -110,6 +110,28 @@ func (s *Server) serve() error {
 
 func (s *Server) handleConn(conn net.Conn) {
 	defer conn.Close()
+	
+	if s.config.AuthToken != "" {
+		buf := make([]byte, 512)
+		conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+		n, err := conn.Read(buf)
+		if err != nil {
+			return
+		}
+		token := ""
+		for i := 0; i < n; i++ {
+			if buf[i] == '\n' || buf[i] == '\r' {
+				token = string(buf[:i])
+				break
+			}
+		}
+		if token != s.config.AuthToken {
+			s.sendRaw(conn, protocol.EncodeMessage(protocol.MsgError, []byte("authentication failed")))
+			return
+		}
+		s.sendRaw(conn, protocol.EncodeMessage(protocol.MsgReady, []byte("AUTHENTICATED")))
+	}
+
 	s.logger.Info("new connection", "remote", conn.RemoteAddr())
 
 	pc, err := s.p.Acquire()
@@ -193,6 +215,10 @@ func (s *Server) handleQuery(conn net.Conn, pc *pool.Conn, query string) {
 	default:
 		s.sendReady(conn)
 	}
+}
+
+func (s *Server) sendRaw(conn net.Conn, data []byte) {
+	conn.Write(data)
 }
 
 func (s *Server) sendError(conn net.Conn, err error) {
