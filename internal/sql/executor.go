@@ -101,7 +101,6 @@ func (e *Executor) execSelect(stmt *QLSelect) ([]relational.Record, error) {
 	if stmt.Key1.Type != 0 {
 		start = evalNodes(stmt.Key1.Kids)
 	}
-
 	if stmt.Key2.Type != 0 {
 		stop = evalNodes(stmt.Key2.Kids)
 	}
@@ -110,6 +109,8 @@ func (e *Executor) execSelect(stmt *QLSelect) ([]relational.Record, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	aggregate := isAggregate(stmt)
 
 	var results []relational.Record
 	var count int64
@@ -126,7 +127,109 @@ func (e *Executor) execSelect(stmt *QLSelect) ([]relational.Record, error) {
 		count++
 		scanner.Next()
 	}
+
+	if aggregate {
+		return computeAggregates(stmt, results), nil
+	}
+
 	return results, nil
+}
+
+func isAggregate(stmt *QLSelect) bool {
+	for _, o := range stmt.Output {
+		if o.Type == QLFunc {
+			name := string(o.Str)
+			switch name {
+			case "count", "sum", "avg", "min", "max":
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func computeAggregates(stmt *QLSelect, rows []relational.Record) []relational.Record {
+	var cols []string
+	var vals []kvstore.Value
+
+	for _, o := range stmt.Output {
+		if o.Type == QLFunc {
+			name := string(o.Str)
+			colName := string(o.Kids[0].Str)
+			switch name {
+			case "count":
+				cols = append(cols, "count")
+				vals = append(vals, kvstore.Value{Type: kvstore.TypeInt64, I64: int64(len(rows))})
+			case "sum":
+				cols = append(cols, "sum("+colName+")")
+				vals = append(vals, aggregateSum(colName, rows))
+			case "avg":
+				cols = append(cols, "avg("+colName+")")
+				total := aggregateSum(colName, rows)
+				if len(rows) > 0 {
+					vals = append(vals, kvstore.Value{Type: kvstore.TypeInt64, I64: total.I64 / int64(len(rows))})
+				} else {
+					vals = append(vals, kvstore.Value{Type: kvstore.TypeInt64})
+				}
+			case "min":
+				cols = append(cols, "min("+colName+")")
+				vals = append(vals, aggregateMinMax(colName, rows, -1))
+			case "max":
+				cols = append(cols, "max("+colName+")")
+				vals = append(vals, aggregateMinMax(colName, rows, 1))
+			}
+		}
+	}
+
+	return []relational.Record{{Cols: cols, Vals: vals}}
+}
+
+func aggregateSum(col string, rows []relational.Record) kvstore.Value {
+	var sum int64
+	for _, r := range rows {
+		for i, c := range r.Cols {
+			if c == col && i < len(r.Vals) && r.Vals[i].Type == kvstore.TypeInt64 {
+				sum += r.Vals[i].I64
+			}
+		}
+	}
+	return kvstore.Value{Type: kvstore.TypeInt64, I64: sum}
+}
+
+func aggregateMinMax(col string, rows []relational.Record, dir int) kvstore.Value {
+	if len(rows) == 0 {
+		return kvstore.Value{}
+	}
+	var best kvstore.Value
+	first := true
+	for _, r := range rows {
+		for i, c := range r.Cols {
+			if c == col && i < len(r.Vals) {
+				if first {
+					best = r.Vals[i]
+					first = false
+				} else if (dir < 0 && valCompare(r.Vals[i], best) < 0) || (dir > 0 && valCompare(r.Vals[i], best) > 0) {
+					best = r.Vals[i]
+				}
+			}
+		}
+	}
+	return best
+}
+
+func valCompare(a, b kvstore.Value) int {
+	if a.Type != b.Type {
+		return int(a.Type) - int(b.Type)
+	}
+	switch a.Type {
+	case kvstore.TypeInt64:
+		if a.I64 < b.I64 { return -1 }
+		if a.I64 > b.I64 { return 1 }
+	case kvstore.TypeBytes:
+		if string(a.Str) < string(b.Str) { return -1 }
+		if string(a.Str) > string(b.Str) { return 1 }
+	}
+	return 0
 }
 
 func (e *Executor) execUpdate(stmt *QLUpdate) error {
