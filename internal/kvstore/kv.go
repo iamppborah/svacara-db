@@ -155,6 +155,7 @@ func (db *KV) updateOrRevert(meta []byte) error {
 			return fmt.Errorf("fsync1: %w", err)
 		}
 	}
+	db.pg.ClearUpdates()
 
 	if _, err := db.file.WriteAt(meta, 0); err != nil {
 		db.failed = true
