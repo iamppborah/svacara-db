@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"encoding/json"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"log/slog"
@@ -26,6 +26,8 @@ type Config struct {
 	SyncMode   kvstore.SyncMode
 	AuthToken  string
 	MaxConns   int
+	TLSCert    string
+	TLSKey     string
 }
 
 type Server struct {
@@ -70,12 +72,25 @@ func NewServer(cfg Config) (*Server, error) {
 }
 
 func (s *Server) Start() error {
-	ln, err := net.Listen("tcp", s.config.ListenAddr)
+	var ln net.Listener
+	var err error
+
+	if s.config.TLSCert != "" && s.config.TLSKey != "" {
+		cert, err := tls.LoadX509KeyPair(s.config.TLSCert, s.config.TLSKey)
+		if err != nil {
+			return fmt.Errorf("tls cert: %w", err)
+		}
+		tlsCfg := &tls.Config{Certificates: []tls.Certificate{cert}}
+		ln, err = tls.Listen("tcp", s.config.ListenAddr, tlsCfg)
+		s.logger.Info("server started with TLS", "addr", s.config.ListenAddr)
+	} else {
+		ln, err = net.Listen("tcp", s.config.ListenAddr)
+		s.logger.Info("server started", "addr", s.config.ListenAddr)
+	}
 	if err != nil {
 		return fmt.Errorf("listen: %w", err)
 	}
 	s.listener = ln
-	s.logger.Info("server started", "addr", s.config.ListenAddr)
 
 	return s.serve()
 }
