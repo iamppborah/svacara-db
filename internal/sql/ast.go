@@ -34,12 +34,14 @@ type QLNode struct {
 }
 
 type QLScan struct {
-	Table  string
-	Key1   QLNode
-	Key2   QLNode
-	Filter QLNode
-	Offset int64
-	Limit  int64
+	Table   string
+	Key1    QLNode
+	Key2    QLNode
+	Filter  QLNode
+	Offset  int64
+	Limit   int64
+	GroupBy []string
+	OrderBy []string
 }
 
 type QLSelect struct {
