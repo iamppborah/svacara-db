@@ -276,5 +276,3 @@ func valToString(v kvstore.Value) string {
 		return "NULL"
 	}
 }
-
-var _ = json.Marshal
