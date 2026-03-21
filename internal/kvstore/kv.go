@@ -58,10 +58,10 @@ func Open(path string, mode SyncMode) (*KV, error) {
 			return nil, err
 		}
 		ptr := db.pg.Read(0)
-		root, flushed, headPage, headSeq, tailPage, tailSeq, ok := storage.ReadMeta(ptr)
+		root, flushed, headPage, headSeq, tailPage, tailSeq, ok := storage.ReadMetaSafe(ptr)
 		if !ok {
 			file.Close()
-			return nil, fmt.Errorf("not a valid SvacaraDB file")
+			return nil, fmt.Errorf("not a valid SvacaraDB file (checksum failed)")
 		}
 		db.pg.ResetTo(flushed)
 		db.tree.Root = root
@@ -127,7 +127,7 @@ func (db *KV) Seek(key []byte) *btree.BIter {
 
 func (db *KV) saveMeta() []byte {
 	page := make([]byte, storage.PageSize)
-	storage.WriteMeta(page, db.tree.Root, db.pg.Flushed(),
+	storage.WriteMetaFull(page, db.tree.Root, db.pg.Flushed(),
 		db.free.HeadPage, db.free.HeadSeq,
 		db.free.TailPage, db.free.TailSeq)
 	return page
