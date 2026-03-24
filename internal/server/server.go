@@ -17,6 +17,7 @@ import (
 	"github.com/ppborah/svacara-db/internal/pool"
 	"github.com/ppborah/svacara-db/internal/protocol"
 	"github.com/ppborah/svacara-db/internal/relational"
+	"github.com/ppborah/svacara-db/internal/shard"
 	"github.com/ppborah/svacara-db/internal/sql"
 )
 
@@ -32,7 +33,7 @@ type Config struct {
 
 type Server struct {
 	config   Config
-	kv       *kvstore.KV
+	store    kvstore.Storage
 	db       *relational.DB
 	p        *pool.Pool
 	listener net.Listener
@@ -44,18 +45,18 @@ type Server struct {
 func NewServer(cfg Config) (*Server, error) {
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
-	kv, err := kvstore.Open(cfg.DBPath, cfg.SyncMode)
+	store, err := shard.Open(cfg.DBPath, cfg.SyncMode)
 	if err != nil {
 		return nil, fmt.Errorf("open db: %w", err)
 	}
 
-	rdb, err := relational.OpenDB(kv)
+	rdb, err := relational.OpenDB(store)
 	if err != nil {
-		kv.Close()
+		store.Close()
 		return nil, fmt.Errorf("open relational: %w", err)
 	}
 
-	p := pool.NewPool(kv, pool.Config{
+	p := pool.NewPool(store, pool.Config{
 		MaxConns:    cfg.MaxConns,
 		MinConns:    2,
 		MaxIdleTime: 10 * time.Minute,
@@ -64,7 +65,7 @@ func NewServer(cfg Config) (*Server, error) {
 
 	return &Server{
 		config: cfg,
-		kv:     kv,
+		store:  store,
 		db:     rdb,
 		p:      p,
 		logger: logger,
@@ -256,7 +257,7 @@ func (s *Server) Shutdown() {
 	s.shutdown = true
 	s.listener.Close()
 	s.p.Close()
-	s.kv.Close()
+	s.store.Close()
 }
 
 func valToString(v kvstore.Value) string {

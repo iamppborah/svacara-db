@@ -9,11 +9,11 @@ import (
 )
 
 type DB struct {
-	kv     *kvstore.KV
+	kv     kvstore.Storage
 	tables map[string]*TableDef
 }
 
-func OpenDB(kv *kvstore.KV) (*DB, error) {
+func OpenDB(kv kvstore.Storage) (*DB, error) {
 	db := &DB{
 		kv:     kv,
 		tables: make(map[string]*TableDef),
@@ -191,7 +191,7 @@ func hashTableName(name string) uint32 {
 	return h
 }
 
-func (db *DB) KV() *kvstore.KV {
+func (db *DB) KV() kvstore.Storage {
 	return db.kv
 }
 

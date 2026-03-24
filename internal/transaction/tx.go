@@ -27,7 +27,7 @@ type CommittedTX struct {
 }
 
 type Tx struct {
-	db         *kvstore.KV
+	db         kvstore.Storage
 	version    uint64
 	isolation  IsolationLevel
 	pending    map[string][]byte
@@ -43,7 +43,7 @@ type Snapshot struct {
 }
 
 type Manager struct {
-	kv       *kvstore.KV
+	kv       kvstore.Storage
 	mu       sync.Mutex
 	version  uint64
 	ongoing  map[uint64]bool
@@ -51,7 +51,7 @@ type Manager struct {
 	minVer   uint64
 }
 
-func NewManager(kv *kvstore.KV) *Manager {
+func NewManager(kv kvstore.Storage) *Manager {
 	return &Manager{
 		kv:      kv,
 		ongoing: make(map[uint64]bool),

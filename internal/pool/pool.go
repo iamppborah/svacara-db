@@ -18,7 +18,7 @@ const (
 
 type Conn struct {
 	id        uint64
-	db        *kvstore.KV
+	db        kvstore.Storage
 	tx        *transaction.Tx
 	mgr       *transaction.Manager
 	createdAt time.Time
@@ -37,7 +37,7 @@ type Config struct {
 type Pool struct {
 	mu       sync.Mutex
 	config   Config
-	db       *kvstore.KV
+	db       kvstore.Storage
 	mgr      *transaction.Manager
 	conns    []*Conn
 	free     []*Conn
@@ -45,7 +45,7 @@ type Pool struct {
 	closed   bool
 }
 
-func NewPool(db *kvstore.KV, config Config) *Pool {
+func NewPool(db kvstore.Storage, config Config) *Pool {
 	if config.MaxConns == 0 {
 		config.MaxConns = 50
 	}
