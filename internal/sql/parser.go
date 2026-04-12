@@ -188,14 +188,8 @@ func pCreateTable(p *Parser) *QLCreateTable {
 		return stmt
 	}
 	for {
-		col := ColSpec{}
-		col.Name = pMustSym(p)
-		col.Type = pType(p)
-		stmt.Cols = append(stmt.Cols, col)
 		if pKeyword(p, "primary", "key") {
-			if err := pExpect(p, "(", "expect '(' after PRIMARY KEY"); err != nil {
-				return stmt
-			}
+			pExpect(p, "(", "expect '(' after PRIMARY KEY")
 			for {
 				stmt.PKeys = append(stmt.PKeys, pMustSym(p))
 				if !pKeyword(p, ",") {
@@ -203,7 +197,15 @@ func pCreateTable(p *Parser) *QLCreateTable {
 				}
 			}
 			pExpect(p, ")", "expect ')'")
+			if pKeyword(p, ",") {
+				continue
+			}
+			break
 		}
+		col := ColSpec{}
+		col.Name = pMustSym(p)
+		col.Type = pType(p)
+		stmt.Cols = append(stmt.Cols, col)
 		if !pKeyword(p, ",") {
 			break
 		}
@@ -270,6 +272,11 @@ func pSelectExprList(p *Parser, node *QLSelect) {
 }
 
 func pSelectExpr(p *Parser, node *QLSelect) {
+	if pKeyword(p, "*") {
+		node.Names = append(node.Names, "*")
+		node.Output = append(node.Output, QLNode{Type: QLIdent, Str: []byte("*")})
+		return
+	}
 	name := pMustSym(p)
 	if pKeyword(p, "as") {
 		name = pMustSym(p)
