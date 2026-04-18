@@ -1,6 +1,6 @@
-# SvacaraDB
+# svacara-db
 
-A PostgreSQL-inspired, production-grade relational database built from scratch in Go.
+A PostgreSQL-inspired relational database engine built in Go with automatic sharding and connection pooling.
 
 **Features:**
 
