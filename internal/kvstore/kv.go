@@ -107,18 +107,20 @@ func (db *KV) Get(key []byte) ([]byte, bool) {
 }
 
 func (db *KV) Set(key []byte, val []byte) error {
-	meta := db.saveMeta()
+	oldRoot := db.tree.Root
+	oldFlushed := db.pg.Flushed()
 	db.tree.Insert(key, val)
-	return db.updateOrRevert(meta)
+	return db.updateOrRevert(oldRoot, oldFlushed)
 }
 
 func (db *KV) Del(key []byte) (bool, error) {
-	meta := db.saveMeta()
+	oldRoot := db.tree.Root
+	oldFlushed := db.pg.Flushed()
 	deleted := db.tree.Delete(key)
 	if !deleted {
 		return false, nil
 	}
-	return true, db.updateOrRevert(meta)
+	return true, db.updateOrRevert(oldRoot, oldFlushed)
 }
 
 func (db *KV) Seek(key []byte) *btree.BIter {
@@ -133,8 +135,9 @@ func (db *KV) saveMeta() []byte {
 	return page
 }
 
-func (db *KV) updateOrRevert(meta []byte) error {
+func (db *KV) updateOrRevert(oldRoot uint64, oldFlushed uint64) error {
 	if db.failed {
+		meta := db.buildMeta(oldRoot, oldFlushed)
 		if _, err := db.file.WriteAt(meta, 0); err != nil {
 			return fmt.Errorf("recover meta: %w", err)
 		}
@@ -145,19 +148,23 @@ func (db *KV) updateOrRevert(meta []byte) error {
 	}
 
 	if _, err := db.pg.FlushPages(); err != nil {
+		db.rollback(oldRoot, oldFlushed)
 		db.failed = true
 		return fmt.Errorf("flush: %w", err)
 	}
 
 	if db.syncMode >= SyncNormal {
 		if err := syscall.Fsync(db.fd); err != nil {
+			db.rollback(oldRoot, oldFlushed)
 			db.failed = true
 			return fmt.Errorf("fsync1: %w", err)
 		}
 	}
 	db.pg.ClearUpdates()
 
+	meta := db.saveMeta()
 	if _, err := db.file.WriteAt(meta, 0); err != nil {
+		db.rollback(oldRoot, oldFlushed)
 		db.failed = true
 		return fmt.Errorf("write meta: %w", err)
 	}
@@ -178,6 +185,20 @@ func (db *KV) updateOrRevert(meta []byte) error {
 	}
 
 	return nil
+}
+
+func (db *KV) buildMeta(root uint64, flushed uint64) []byte {
+	page := make([]byte, storage.PageSize)
+	storage.WriteMetaFull(page, root, flushed,
+		db.free.HeadPage, db.free.HeadSeq,
+		db.free.TailPage, db.free.TailSeq)
+	return page
+}
+
+func (db *KV) rollback(root uint64, flushed uint64) {
+	db.tree.Root = root
+	db.pg.ResetTo(flushed)
+	db.pg.ClearUpdates()
 }
 
 func (db *KV) Close() error {
