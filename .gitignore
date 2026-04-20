@@ -1,8 +1,8 @@
 # Binaries
 *.db
 *.db.*
-svacara-server
-svacara-cli
+/svacara-server
+/svacara-cli
 /bin/
 /dist/
 
