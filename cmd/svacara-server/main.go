@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ppborah/svacara-db/internal/kvstore"
-	"github.com/ppborah/svacara-db/internal/server"
+	"github.com/iamppborah/svacara-db/internal/kvstore"
+	"github.com/iamppborah/svacara-db/internal/server"
 )
 
 func main() {

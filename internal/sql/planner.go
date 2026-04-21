@@ -1,7 +1,7 @@
 package sql
 
 import (
-	"github.com/ppborah/svacara-db/internal/relational"
+	"github.com/iamppborah/svacara-db/internal/relational"
 )
 
 func selectIndex(tdef *relational.TableDef, filter QLNode) *relational.IndexDef {

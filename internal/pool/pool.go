@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ppborah/svacara-db/internal/kvstore"
-	"github.com/ppborah/svacara-db/internal/transaction"
+	"github.com/iamppborah/svacara-db/internal/kvstore"
+	"github.com/iamppborah/svacara-db/internal/transaction"
 )
 
 type PoolMode int

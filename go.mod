@@ -1,4 +1,4 @@
-module github.com/ppborah/svacara-db
+module github.com/iamppborah/svacara-db
 
 go 1.26.0
 

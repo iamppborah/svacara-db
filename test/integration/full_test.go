@@ -5,9 +5,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ppborah/svacara-db/internal/kvstore"
-	"github.com/ppborah/svacara-db/internal/relational"
-	"github.com/ppborah/svacara-db/internal/sql"
+	"github.com/iamppborah/svacara-db/internal/kvstore"
+	"github.com/iamppborah/svacara-db/internal/relational"
+	"github.com/iamppborah/svacara-db/internal/sql"
 )
 
 func TestCreateInsertSelect(t *testing.T) {

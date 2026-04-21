@@ -5,8 +5,8 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/ppborah/svacara-db/internal/btree"
-	"github.com/ppborah/svacara-db/internal/storage"
+	"github.com/iamppborah/svacara-db/internal/btree"
+	"github.com/iamppborah/svacara-db/internal/storage"
 )
 
 type SyncMode int

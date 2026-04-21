@@ -1,6 +1,6 @@
 package kvstore
 
-import "github.com/ppborah/svacara-db/internal/btree"
+import "github.com/iamppborah/svacara-db/internal/btree"
 
 type Storage interface {
 	Get(key []byte) ([]byte, bool)

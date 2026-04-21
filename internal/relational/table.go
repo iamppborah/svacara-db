@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/ppborah/svacara-db/internal/btree"
-	"github.com/ppborah/svacara-db/internal/kvstore"
+	"github.com/iamppborah/svacara-db/internal/btree"
+	"github.com/iamppborah/svacara-db/internal/kvstore"
 )
 
 type DB struct {

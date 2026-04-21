@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/ppborah/svacara-db/internal/btree"
+	"github.com/iamppborah/svacara-db/internal/btree"
 )
 
 func FuzzKVEncoding(f *testing.F) {

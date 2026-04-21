@@ -3,7 +3,7 @@ package relational
 import (
 	"fmt"
 
-	"github.com/ppborah/svacara-db/internal/kvstore"
+	"github.com/iamppborah/svacara-db/internal/kvstore"
 )
 
 type ColType uint8
